@@ -1,0 +1,40 @@
+name: build
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MIPS toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mipsel-linux-gnu python3
+
+      - name: Build (Makefile)
+        run: make
+
+      - name: Show result
+        run: |
+          ls -l cdloader.exe
+          test "$(head -c 8 cdloader.exe)" = "PS-X EXE"
+          grep -E "MemCardPro_SendGameID|game_id_send" cdloader.map
+
+      - name: Upload PS-EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdloader-game-id-psexe
+          path: |
+            cdloader.exe
+            cdloader.map
